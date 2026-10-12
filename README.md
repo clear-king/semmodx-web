@@ -3,7 +3,7 @@
 **在浏览器里使用 SemModX 的「函数聚类 / Object Files」窗口，不需要打开 IDA 桌面端。**
 
 SemModX Web 用 IDA Pro 9 自带的 **idalib**（IDA as a library）在后台无界面运行 IDA，
-加载 [SemModX](../semmodx-oss) 插件的聚类与大模型分析代码，并通过一个本地网页提供：
+加载 [SemModX](https://github.com/clear-king/SemModX-) 插件的聚类与大模型分析代码，并通过一个本地网页提供：
 
 - **模块树**：LFA 聚类得到的模块，以及每个模块里的函数（对应插件的 Object Files 窗口）
 - **伪代码**：点击函数查看 Hex-Rays 反编译结果
