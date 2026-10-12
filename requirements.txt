@@ -1,0 +1,13 @@
+# SemModX Web requirements.
+#
+# Install these into the SAME interpreter that IDA uses (see settings.ini
+# [ida] python). The IDA worker imports the SemModX plugin from that
+# interpreter, so the plugin's own requirements.txt must be installed there too.
+
+fastapi>=0.110
+uvicorn>=0.29
+# FastAPI needs this for the binary upload endpoint (multipart/form-data).
+python-multipart>=0.0.9
+
+# Not installed from PyPI -- ships with IDA Pro 9.x:
+#   idapro   pip install "<IDA>/idalib/python", then run py-activate-idalib.py once

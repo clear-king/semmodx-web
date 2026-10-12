@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>SemModX · Object Files</title>
+<style>
+  :root{
+    --bg:#12141a; --panel:#1a1d26; --panel2:#20242f; --line:#2c3140;
+    --fg:#d8dce6; --dim:#8b93a7; --accent:#5aa9e6; --accent2:#7d5ae6;
+    --ok:#4ec9a0; --warn:#e6b95a; --err:#e6705a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:13px/1.5 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+       background:var(--bg);color:var(--fg);height:100vh;display:flex;flex-direction:column}
+  button{font:inherit;background:var(--panel2);color:var(--fg);border:1px solid var(--line);
+         border-radius:5px;padding:5px 11px;cursor:pointer}
+  button:hover:not(:disabled){border-color:var(--accent);color:#fff}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#08131c;font-weight:600}
+  button.primary:hover:not(:disabled){background:#79bbec}
+  input,select{font:inherit;background:var(--panel2);color:var(--fg);
+               border:1px solid var(--line);border-radius:5px;padding:5px 8px}
+  header{display:flex;align-items:center;gap:10px;padding:8px 12px;
+         background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header h1{font-size:14px;margin:0 12px 0 0;font-weight:600;white-space:nowrap}
+  header .sp{flex:1}
+  .badge{font-size:11px;padding:2px 7px;border-radius:9px;background:var(--panel2);
+         border:1px solid var(--line);color:var(--dim);white-space:nowrap}
+  .badge.ok{color:var(--ok);border-color:#2c5a48}
+  .badge.err{color:var(--err);border-color:#5a3028}
+  main{flex:1;display:flex;min-height:0}
+  #left{width:390px;min-width:260px;display:flex;flex-direction:column;
+        background:var(--panel);border-right:1px solid var(--line)}
+  #filter{padding:7px;border-bottom:1px solid var(--line)}
+  #filter input{width:100%}
+  #tree{flex:1;overflow:auto;padding:4px 0}
+  .mod{padding:5px 10px;cursor:pointer;border-left:2px solid transparent;
+       display:flex;gap:7px;align-items:baseline}
+  .mod:hover{background:var(--panel2)}
+  .mod.sel{background:var(--panel2);border-left-color:var(--accent)}
+  .mod .nm{flex:1;word-break:break-all}
+  .mod .ct{font-size:11px;color:var(--dim)}
+  .fn{padding:3px 10px 3px 26px;cursor:pointer;font-size:12px;color:var(--dim);
+      display:flex;gap:7px}
+  .fn:hover{background:var(--panel2);color:var(--fg)}
+  .fn .ea{font-family:Consolas,monospace;color:#6f7a92}
+  .fn .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #right{flex:1;display:flex;flex-direction:column;min-width:0}
+  #info{padding:9px 12px;background:var(--panel);border-bottom:1px solid var(--line);
+        display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  #info b{color:#fff}
+  #info .kv{font-size:12px;color:var(--dim)}
+  #actions{display:flex;gap:7px;margin-left:auto;align-items:center}
+  #body{flex:1;display:flex;min-height:0}
+  #code{flex:1;overflow:auto;padding:10px 12px;margin:0;
+        font-family:Consolas,"Cascadia Mono",monospace;font-size:12px;
+        white-space:pre;background:#0e1015;border-right:1px solid var(--line)}
+  #side{width:430px;display:flex;flex-direction:column;background:var(--panel)}
+  #sideTabs{display:flex;border-bottom:1px solid var(--line)}
+  #sideTabs button{border:0;border-radius:0;background:transparent;color:var(--dim);
+                   padding:8px 12px;border-bottom:2px solid transparent}
+  #sideTabs button.on{color:#fff;border-bottom-color:var(--accent)}
+  #sideBody{flex:1;overflow:auto;padding:10px 12px}
+  #log{font-family:Consolas,monospace;font-size:11.5px}
+  .le{margin:0 0 3px;white-space:pre-wrap;word-break:break-word}
+  .le.warn{color:var(--warn)} .le.error{color:var(--err)} .le.info{color:var(--dim)}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:6px;
+        padding:9px 11px;margin-bottom:9px}
+  .card h4{margin:0 0 6px;font-size:12px;color:var(--accent);font-weight:600;
+           font-family:Consolas,monospace}
+  .card .tx{white-space:pre-wrap;word-break:break-word;font-size:12.5px}
+  .prog{height:4px;background:var(--panel2);border-radius:2px;overflow:hidden;margin:8px 0}
+  .prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+  table.rn{width:100%;border-collapse:collapse;font-size:12px}
+  table.rn td{padding:2px 4px;border-bottom:1px solid var(--line);
+              font-family:Consolas,monospace;word-break:break-all}
+  table.rn td.a{color:var(--ok)}
+  .hint{color:var(--dim);padding:22px;text-align:center;font-size:12.5px}
+  .dim{color:var(--dim)}
+  body.drag::after{content:"松开以上传二进制文件";position:fixed;inset:12px;
+    border:2px dashed var(--accent);border-radius:10px;background:rgba(18,20,26,.85);
+    display:flex;align-items:center;justify-content:center;font-size:18px;
+    color:var(--accent);pointer-events:none;z-index:99}
+</style>
+</head>
+<body>
+<header>
+  <h1>SemModX · Object Files</h1>
+  <select id="dbSel" style="min-width:300px"></select>
+  <button class="primary" id="openBtn">打开</button>
+  <button id="uploadBtn" title="上传一个二进制文件作为分析对象">上传二进制</button>
+  <input type="file" id="fileInput" hidden>
+  <span class="badge" id="statusBadge">未连接</span>
+  <span class="badge" id="modelBadge">—</span>
+  <span class="sp"></span>
+  <button id="reloadBtn" title="重新扫描数据库与重建模块树">重新分析</button>
+</header>
+
+<main>
+  <div id="left">
+    <div id="filter"><input id="filterInput" placeholder="过滤模块 / 函数…"></div>
+    <div id="tree"><div class="hint">打开一个数据库后在这里显示模块树</div></div>
+  </div>
+
+  <div id="right">
+    <div id="info">
+      <span class="kv" id="infoMain">未选择模块</span>
+      <div id="actions">
+        <label class="kv"><input type="checkbox" id="applyChk"> 实际写入</label>
+        <button id="analyzeBtn" disabled>分析模块</button>
+        <button id="renameBtn" disabled>联合重命名</button>
+        <button id="stopBtn" disabled>停止</button>
+      </div>
+    </div>
+    <div class="prog"><i id="progBar"></i></div>
+    <div id="body">
+      <pre id="code">// 选择左侧的函数查看伪代码</pre>
+      <div id="side">
+        <div id="sideTabs">
+          <button data-t="log" class="on">日志</button>
+          <button data-t="results">结果</button>
+          <button data-t="report">模块报告</button>
+        </div>
+        <div id="sideBody">
+          <div id="paneLog" class="pane"></div>
+          <div id="paneResults" class="pane" hidden></div>
+          <div id="paneReport" class="pane" hidden><div class="hint">选择一个模块</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+let MODULES = [], SEL = null, SELFN = null, JOB = null, ES = null;
+
+// ---- helpers -------------------------------------------------------------
+async function api(path, opts){
+  const r = await fetch(path, opts);
+  const t = await r.text();
+  let j; try { j = JSON.parse(t); } catch(e){ throw new Error(t.slice(0,300)); }
+  if(!r.ok) throw new Error(j.detail || JSON.stringify(j).slice(0,300));
+  return j;
+}
+function log(msg, level){
+  const d = document.createElement('div');
+  d.className = 'le ' + (level||'info');
+  d.textContent = msg;
+  $('#paneLog').appendChild(d);
+  $('#paneLog').scrollTop = 1e9;
+}
+function clearLog(){ $('#paneLog').innerHTML=''; }
+function setProg(i,total){
+  $('#progBar').style.width = total ? (100*i/total).toFixed(1)+'%' : '0%';
+}
+function badge(el, text, cls){ el.textContent = text; el.className = 'badge ' + (cls||''); }
+
+// ---- tabs ----------------------------------------------------------------
+document.querySelectorAll('#sideTabs button').forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll('#sideTabs button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    for(const p of ['log','results','report'])
+      $('#pane'+p[0].toUpperCase()+p.slice(1)).hidden = (p !== b.dataset.t);
+  };
+});
+function showTab(name){
+  document.querySelector(`#sideTabs button[data-t="${name}"]`).click();
+}
+
+// ---- status / databases --------------------------------------------------
+async function refreshStatus(){
+  try{
+    const s = await api('/api/status');
+    if(s.root){
+      badge($('#statusBadge'), '已加载 ' + s.root, 'ok');
+    } else {
+      badge($('#statusBadge'), '未加载数据库', '');
+    }
+    const m = s.llm || {};
+    if(m.configured){
+      badge($('#modelBadge'), m.model, '');
+      $('#modelBadge').title = '可用供应商: ' + (m.providers || []).join(', ');
+    } else {
+      badge($('#modelBadge'), '大模型未配置', 'err');
+      // The plugin's own message says which config.ini to fix and how.
+      $('#modelBadge').title = (m.warnings || []).join('\n\n') || '请检查 SemModX 插件的 config.ini';
+    }
+  }catch(e){
+    badge($('#statusBadge'), '后端不可用', 'err');
+  }
+}
+async function refreshDatabases(preferPath){
+  const [d, u] = await Promise.all([
+    api('/api/databases'),
+    api('/api/uploads').catch(() => ({uploads: []})),
+  ]);
+  const sel = $('#dbSel');
+  sel.innerHTML = '';
+
+  const mb = n => (n/1048576).toFixed(1) + ' MB';
+  const addGroup = (label, items, fmt) => {
+    if(!items.length) return;
+    const g = document.createElement('optgroup');
+    g.label = label;
+    for(const it of items){
+      const o = document.createElement('option');
+      o.value = it.path;
+      o.textContent = fmt(it);
+      g.appendChild(o);
+    }
+    sel.appendChild(g);
+  };
+
+  // Uploaded binaries come first: that is usually what was just added.
+  addGroup('已上传的二进制', u.uploads || [],
+           x => `${x.name}  ·  ${mb(x.size)}  ·  ${x.analysed ? '已分析' : '待分析'}`);
+  addGroup('已有数据库 (.i64 / .idb)', d.databases || [],
+           x => `${x.name}  ·  ${mb(x.size)}`);
+
+  if(!sel.options.length){
+    sel.innerHTML = '<option value="">（暂无数据库，可点「上传二进制」）</option>';
+    return;
+  }
+  if(preferPath){
+    for(const o of sel.options){
+      if(o.value === preferPath){ o.selected = true; break; }
+    }
+  }
+}
+
+// ---- open ---------------------------------------------------------------
+$('#openBtn').onclick = async () => {
+  const p = $('#dbSel').value;
+  if(!p) return;
+  $('#openBtn').disabled = true;
+  clearLog(); log('打开数据库 ' + p);
+  try{
+    const r = await api('/api/open', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({path:p, auto_analysis:true})
+    });
+    log(`加载完成：${r.root} · ${r.arch.proc||'?'} ${r.arch.bits||'?'}位 · ${r.open_secs}s`, 'info');
+    await refreshStatus();
+    await loadTree();
+  }catch(e){
+    log('打开失败: ' + e.message, 'error');
+  }finally{
+    $('#openBtn').disabled = false;
+  }
+};
+$('#reloadBtn').onclick = async () => { await refreshDatabases(); await loadTree(true); };
+
+// ---- tree ---------------------------------------------------------------
+async function loadTree(quiet){
+  if(!quiet) { clearLog(); log('开始聚类分析（LFA）…'); }
+  $('#tree').innerHTML = '<div class="hint">分析中…</div>';
+  try{
+    const t = await api('/api/tree');
+    MODULES = t.modules;
+    renderTree();
+    log(`LFA 完成：${MODULES.length} 个模块，共 ${t.nfunctions} 个函数，用时 ${t.analyze_secs}s`, 'info');
+    const st = t.stats || {};
+    if(st.total_files) log(`从 ${st.total_files} 处字符串引用定位到源文件信息`, 'info');
+  }catch(e){
+    $('#tree').innerHTML = '<div class="hint">分析失败</div>';
+    log('聚类失败: ' + e.message, 'error');
+  }
+}
+function renderTree(){
+  const q = $('#filterInput').value.trim().toLowerCase();
+  const host = $('#tree');
+  host.innerHTML = '';
+  let shown = 0;
+  for(const m of MODULES){
+    const funcs = q
+      ? m.functions.filter(f => f.name.toLowerCase().includes(q) || m.name.toLowerCase().includes(q))
+      : m.functions;
+    if(q && !funcs.length && !m.name.toLowerCase().includes(q)) continue;
+    shown++;
+    const el = document.createElement('div');
+    el.className = 'mod' + (SEL && SEL.idx===m.idx ? ' sel':'');
+    el.innerHTML = `<span class="nm">${esc(m.name)}</span>
+                    <span class="ct">${m.nfunctions} 函数</span>`;
+    el.onclick = ()=>selectModule(m);
+    host.appendChild(el);
+    const list = q ? funcs : (SEL && SEL.idx===m.idx ? m.functions : []);
+    for(const f of list.slice(0, 800)){
+      const fe = document.createElement('div');
+      fe.className = 'fn';
+      fe.innerHTML = `<span class="ea">${f.ea.toString(16)}</span>
+                      <span class="nm">${esc(f.name)}</span>`;
+      fe.onclick = ev => { ev.stopPropagation(); selectFunction(f); };
+      host.appendChild(fe);
+    }
+  }
+  if(!shown) host.innerHTML = '<div class="hint">无匹配项</div>';
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+$('#filterInput').oninput = renderTree;
+
+// ---- upload --------------------------------------------------------------
+$('#uploadBtn').onclick = () => $('#fileInput').click();
+$('#fileInput').onchange = ev => {
+  const f = ev.target.files[0];
+  if(f) uploadFile(f);
+  ev.target.value = '';   // allow re-selecting the same file
+};
+// Drag a file anywhere onto the page to upload it.
+document.addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('drag'); });
+document.addEventListener('dragleave', e => { if(e.target === document.documentElement || !e.relatedTarget) document.body.classList.remove('drag'); });
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  document.body.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if(f) uploadFile(f);
+});
+
+function uploadFile(file){
+  const mb = file.size / 1048576;
+  clearLog(); showTab('log');
+  log(`上传 ${file.name}（${mb.toFixed(1)} MB）…`);
+
+  // XHR rather than fetch: it gives real upload-progress events.
+  const xhr = new XMLHttpRequest();
+  const fd = new FormData();
+  fd.append('file', file);
+
+  xhr.upload.onprogress = e => {
+    if(e.lengthComputable){
+      const pct = (e.loaded / e.total * 100).toFixed(0);
+      $('#progBar').style.width = pct + '%';
+      $('#statusBadge').textContent = `上传中 ${pct}%`;
+      $('#statusBadge').className = 'badge';
+    }
+  };
+  xhr.upload.onload = () => {
+    log('上传完成，服务端正在落盘并准备分析…', 'info');
+    $('#statusBadge').textContent = '分析中…';
+  };
+  xhr.onerror = () => {
+    log('上传失败：网络错误', 'error');
+    badge($('#statusBadge'), '上传失败', 'err');
+    setProg(0,0);
+  };
+  xhr.onload = () => {
+    setProg(0,0);
+    let r;
+    try { r = JSON.parse(xhr.responseText); } catch(e) { r = null; }
+    if(xhr.status !== 200 || !r || r.ok === false){
+      const msg = (r && (r.detail || r.err)) || xhr.responseText.slice(0,200) || ('HTTP ' + xhr.status);
+      log('上传被拒绝: ' + msg, 'error');
+      badge($('#statusBadge'), '上传失败', 'err');
+      return;
+    }
+    log(`已保存: ${r.path}（${(r.size/1048576).toFixed(1)} MB，${r.seconds}s）`);
+    log(r.note, 'info');
+    // Put the new binary in the picker and select it, ready to open.
+    refreshDatabases(r.path).then(()=>{
+      log('已选中新上传的文件，点击「打开」开始分析。', 'info');
+      badge($('#statusBadge'), '已上传，待打开', 'ok');
+    });
+  };
+  xhr.open('POST', '/api/upload');
+  xhr.send(fd);
+}
+
+
+// ---- selection -----------------------------------------------------------
+function selectModule(m){
+  SEL = m;
+  $('#infoMain').innerHTML =
+    `<b>${esc(m.name)}</b> &nbsp;
+     <span class="kv">0x${m.start.toString(16)} – 0x${m.end.toString(16)} ·
+     ${m.size} 字节 · ${m.nfunctions} 个函数</span>`;
+  $('#analyzeBtn').disabled = false;
+  $('#renameBtn').disabled = false;
+  renderTree();
+  loadReport(m.start);
+  showTab('report');
+}
+async function selectFunction(f){
+  SELFN = f;
+  $('#code').textContent = '// 反编译中 0x' + f.ea.toString(16) + ' …';
+  try{
+    const d = await api('/api/decompile?ea=' + f.ea);
+    $('#code').textContent = d.code;
+  }catch(e){
+    $('#code').textContent = '// 反编译失败: ' + e.message;
+  }
+}
+async function loadReport(start){
+  try{
+    const c = await api('/api/comment?ea=' + start + '&kind=addr');
+    $('#paneReport').innerHTML = c.comment
+      ? `<div class="card"><div class="tx">${esc(c.comment)}</div></div>`
+      : '<div class="hint">该模块暂无分析报告（先运行「分析模块」）</div>';
+  }catch(e){
+    $('#paneReport').innerHTML = '<div class="hint">读取失败</div>';
+  }
+}
+
+// ---- jobs ----------------------------------------------------------------
+function watchJob(jobId, onEvent){
+  if(ES) ES.close();
+  JOB = jobId;
+  $('#stopBtn').disabled = false;
+  ES = new EventSource('/api/job/' + jobId + '/stream');
+  ES.onmessage = ev => {
+    const d = JSON.parse(ev.data);
+    onEvent(d);
+    if(d.event === 'end'){ finishJob(); }
+  };
+  ES.onerror = () => { if(ES && ES.readyState === 2) finishJob(); };
+}
+function finishJob(){
+  if(ES){ ES.close(); ES = null; }
+  JOB = null;
+  $('#stopBtn').disabled = true;
+  $('#analyzeBtn').disabled = !SEL;
+  $('#renameBtn').disabled = !SEL;
+  setProg(0,0);
+}
+$('#stopBtn').onclick = () => { if(ES) ES.close(); ES=null; JOB=null;
+  $('#stopBtn').disabled = true; log('已断开任务流（后端仍在运行）','warn'); };
+
+function commonEvents(d){
+  if(d.event === 'log'){ log(d.msg, d.level); return true; }
+  if(d.event === 'progress'){
+    setProg(d.i, d.total);
+    log(`[${d.i}/${d.total}] 0x${d.ea.toString(16)} ${d.name}`, 'info');
+    return true;
+  }
+  if(d.event === 'end'){
+    log('任务结束: ' + JSON.stringify(d.result), 'info');
+    refreshStatus();
+    return true;
+  }
+  return false;
+}
+
+// ---- 分析模块 ------------------------------------------------------------
+$('#analyzeBtn').onclick = async () => {
+  if(!SEL) return;
+  clearLog(); showTab('results');
+  $('#paneResults').innerHTML = '';
+  log(`开始分析模块 ${SEL.name}（${SEL.nfunctions} 个函数）`);
+  const r = await api('/api/analyze_module', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({start:SEL.start, end:SEL.end, module_name:SEL.name})
+  });
+  $('#analyzeBtn').disabled = true;
+  watchJob(r.job_id, d => {
+    if(commonEvents(d)) return;
+    if(d.event === 'function'){
+      const c = document.createElement('div');
+      c.className = 'card';
+      c.innerHTML = `<h4>0x${d.ea.toString(16)} ${esc(d.name)}</h4>
+                     <div class="tx">${esc(d.reply)}</div>`;
+      $('#paneResults').appendChild(c);
+    }
+    if(d.event === 'summary'){
+      const c = document.createElement('div');
+      c.className = 'card';
+      c.style.borderColor = 'var(--accent)';
+      c.innerHTML = `<h4>模块总结 · ${esc(d.module)}</h4>
+                     <div class="tx">${esc(d.reply)}</div>`;
+      $('#paneResults').appendChild(c);
+      loadReport(d.module === (SEL&&SEL.name) ? SEL.start : SEL.start);
+    }
+  });
+};
+
+// ---- 联合重命名 ----------------------------------------------------------
+$('#renameBtn').onclick = async () => {
+  if(!SEL) return;
+  const apply = $('#applyChk').checked;
+  if(apply && !confirm('将直接把变量重命名写入数据库，确定继续？')) return;
+  clearLog(); showTab('results');
+  $('#paneResults').innerHTML = '';
+  log(`开始联合重命名 ${SEL.name}（${SEL.nfunctions} 个函数，apply=${apply}）`);
+  const r = await api('/api/joint_rename', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({start:SEL.start, end:SEL.end, module_name:SEL.name, apply})
+  });
+  $('#renameBtn').disabled = true;
+  watchJob(r.job_id, d => {
+    if(commonEvents(d)) return;
+    if(d.event === 'rename'){
+      const keys = Object.keys(d.proposed||{});
+      const c = document.createElement('div');
+      c.className = 'card';
+      let rows = '';
+      if(!keys.length) rows = '<tr><td class="dim">无可用的重命名建议</td></tr>';
+      for(const k of keys){
+        const done = (d.applied||[]).some(p => p[0]===k && p[1]===d.proposed[k]);
+        rows += `<tr><td>${esc(k)}</td><td>→</td>
+                 <td class="${done?'a':''}">${esc(d.proposed[k])}</td>
+                 <td class="dim">${done?'已写入':(apply?'未写入':'预演')}</td></tr>`;
+      }
+      c.innerHTML = `<h4>0x${d.ea.toString(16)} ${esc(d.name)}</h4>
+                     <table class="rn">${rows}</table>`;
+      $('#paneResults').appendChild(c);
+    }
+  });
+};
+
+// ---- boot ----------------------------------------------------------------
+(async function(){
+  await refreshStatus();
+  await refreshDatabases();
+  log('就绪。选择一个数据库并点击「打开」。','info');
+})();
+</script>
+</body>
+</html>

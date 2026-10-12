@@ -1,0 +1,31 @@
+; SemModX Web settings. Copy to settings.ini and adjust the paths.
+; Relative paths are resolved against this folder.
+
+[ida]
+; IDA Pro 9.x installation directory (must contain idalib.dll / libidalib.so).
+install_dir = C:\Program Files\IDA Professional 9.0
+; Python interpreter IDA is bound to (check with idapyswitch). It runs the
+; headless IDA worker, so it must have idapro, the plugin's requirements and
+; this project's requirements installed. Empty = the interpreter running serve.py.
+python =
+
+[semmodx]
+; Folder that contains the semmodx/ plugin package (and its config.ini).
+; Empty = <install_dir>\plugins
+plugin_dir =
+
+[server]
+; Keep 127.0.0.1 unless you know what you are doing: there is no
+; authentication, and the UI exposes whole binaries plus an upload endpoint.
+host = 127.0.0.1
+port = 6001
+
+[storage]
+; Uploaded binaries and the IDA databases created next to them.
+workspace = workspace
+; Empty = <workspace>\uploads
+upload_dir =
+log_dir = logs
+max_upload_mb = 2048
+; Extra folders scanned for existing .i64/.idb databases, separated by ";".
+database_dirs =

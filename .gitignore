@@ -1,0 +1,17 @@
+# Local settings -- machine-specific paths
+settings.ini
+
+# Runtime data: uploaded binaries, IDA databases, logs
+workspace/
+logs/
+*.i64
+*.idb
+*.i32
+*.id0
+*.id1
+*.id2
+*.nam
+*.til
+
+__pycache__/
+*.py[cod]
