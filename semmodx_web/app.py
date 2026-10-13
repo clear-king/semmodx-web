@@ -5,11 +5,12 @@ Serves the module tree that the desktop plugin shows in its Object Files
 window, plus the per-module analysis and joint-rename operations, all backed by
 a headless idalib worker (see core/ida_worker.py).
 
-Bound to localhost only: the databases contain the entirety of whatever binary
-is under analysis, so there is no reason to expose this off-host.
+The bind address is configured in settings.ini. The databases contain the
+entirety of whatever binary is under analysis, so keep the service restricted
+to trusted clients.
 
 Run:  python serve.py
-      -> http://127.0.0.1:6001
+      -> the URL configured in [server]
 """
 
 import os
